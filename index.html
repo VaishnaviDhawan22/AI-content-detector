@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Content Detector</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    min-height: 100vh;
+    font-family: 'Segoe UI', sans-serif;
+    color: #172554;
+    background:
+        radial-gradient(circle at 15% 20%, #dce6ff 0, transparent 30%),
+        radial-gradient(circle at 85% 75%, #c5d5ff 0, transparent 30%),
+        linear-gradient(135deg, #829ce5, #b7c9fa, #dce4ff);
+    overflow-x: hidden;
+}
+
+/* Background stars */
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        radial-gradient(white 2px, transparent 3px),
+        radial-gradient(#ffffff99 1px, transparent 2px);
+    background-size: 90px 90px, 140px 140px;
+    background-position: 10px 20px, 50px 70px;
+    z-index: 0;
+}
+
+/* Floating decorations */
+
+.decoration {
+    position: fixed;
+    font-size: 55px;
+    opacity: 0.9;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.robot1 {
+    top: 8%;
+    left: 5%;
+}
+
+.robot2 {
+    bottom: 7%;
+    left: 5%;
+}
+
+.robot3 {
+    bottom: 12%;
+    right: 5%;
+}
+
+.planet {
+    top: 7%;
+    right: 8%;
+    font-size: 65px;
+}
+
+.star {
+    top: 35%;
+    right: 8%;
+    font-size: 35px;
+}
+
+/* Main layout */
+
+main {
+    position: relative;
+    z-index: 1;
+    max-width: 850px;
+    margin: auto;
+    padding: 75px 20px;
+}
+
+.heading {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.heading h1 {
+    font-size: 2.5rem;
+    color: #14245a;
+    margin-bottom: 10px;
+}
+
+.heading p {
+    color: #344a82;
+    font-size: 1rem;
+}
+
+/* Main card */
+
+.card {
+    background: rgba(255,255,255,0.91);
+    border: 2px solid rgba(255,255,255,0.9);
+    border-radius: 24px;
+    padding: 32px;
+    box-shadow: 0 15px 45px rgba(48,70,150,0.18);
+    backdrop-filter: blur(12px);
+}
+
+label {
+    display: block;
+    margin: 15px 0 10px;
+    font-weight: 600;
+    color: #172554;
+}
+
+textarea {
+    width: 100%;
+    min-height: 155px;
+    padding: 16px;
+    border: 2px solid #cbd5f5;
+    border-radius: 14px;
+    background: #f8faff;
+    color: #172554;
+    font: inherit;
+    resize: vertical;
+    outline: none;
+    transition: 0.2s;
+}
+
+textarea:focus {
+    border-color: #6489ef;
+    box-shadow: 0 0 0 3px #6489ef22;
+}
+
+textarea::placeholder {
+    color: #8795b8;
+}
+
+/* OR divider */
+
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 23px 0;
+    color: #7182ad;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    height: 1px;
+    background: #cbd5f5;
+    flex: 1;
+}
+
+/* File upload */
+
+.upload-box {
+    background: #f4f7ff;
+    border: 2px dashed #a5b8ef;
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+}
+
+input[type=file] {
+    max-width: 100%;
+    margin-top: 10px;
+    color: #52658e;
+    font: inherit;
+}
+
+/* Analyze button */
+
+button {
+    width: 100%;
+    margin-top: 22px;
+    padding: 16px;
+    border: none;
+    border-radius: 13px;
+    background: linear-gradient(110deg, #397df0, #5365e8);
+    color: white;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.25s;
+    box-shadow: 0 6px 15px #5365e844;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 9px 20px #5365e866;
+}
+
+button:disabled {
+    opacity: 0.65;
+    cursor: wait;
+    transform: none;
+}
+
+/* Result */
+
+#result {
+    margin-top: 25px;
+    padding: 20px;
+    background: #f4f7ff;
+    border: 1px solid #d4defa;
+    border-radius: 15px;
+    display: none;
+}
+
+.score {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #344fc1;
+}
+
+.bar {
+    height: 12px;
+    background: #dce4fa;
+    border-radius: 20px;
+    overflow: hidden;
+    margin: 12px 0;
+}
+
+.fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, #6a8cf5, #5365e8);
+    transition: width 0.5s;
+}
+
+.meta {
+    font-size: 0.85rem;
+    color: #68799e;
+    margin-top: 10px;
+}
+
+#reasoning {
+    margin-top: 12px;
+    line-height: 1.6;
+}
+
+.error {
+    color: #dc2626;
+    margin-top: 15px;
+    overflow-wrap: anywhere;
+}
+
+.note {
+    margin-top: 20px;
+    text-align: center;
+    color: #7182ad;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+/* Mobile */
+
+@media(max-width:600px) {
+    main {
+        padding: 45px 15px;
+    }
+
+    .heading h1 {
+        font-size: 1.9rem;
+    }
+
+    .card {
+        padding: 20px;
+    }
+
+    .decoration {
+        font-size: 30px;
+        opacity: 0.55;
+    }
+
+    .planet {
+        font-size: 40px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Cute space decorations -->
+
+<div class="decoration robot1">🤖</div>
+<div class="decoration robot2">👾</div>
+<div class="decoration robot3">🤖</div>
+<div class="decoration planet">🪐</div>
+<div class="decoration star">✨</div>
+
+<main>
+
+    <div class="heading">
+        <h1>✨ AI Content Detector</h1>
+        <p>Let's find out whether your content is AI-generated!</p>
+    </div>
+
+    <div class="card">
+
+        <label for="text">💬 Enter your text</label>
+
+        <textarea
+            id="text"
+            placeholder="Paste your message here..."
+        ></textarea>
+
+        <div class="divider">OR</div>
+
+        <div class="upload-box">
+            <label for="image">📸 Upload a chat screenshot</label>
+            <p style="font-size:13px;color:#7182ad;">
+                PNG, JPEG or WEBP
+            </p>
+            <input
+                type="file"
+                id="image"
+                accept="image/png,image/jpeg,image/webp"
+            >
+        </div>
+
+        <button id="go">🔍 Analyze Content</button>
+
+        <div id="error" class="error"></div>
+
+        <div id="result">
+
+            <div class="score">
+                <span id="score">0</span>% likely AI
+            </div>
+
+            <div class="bar">
+                <div class="fill" id="fill"></div>
+            </div>
+
+            <div class="meta" id="meta"></div>
+
+            <p id="reasoning"></p>
+
+        </div>
+
+        <p class="note">
+            🤍 This is an estimate, not proof.
+            AI detection is unreliable, especially on short messages.
+        </p>
+
+    </div>
+
+</main>
+
+<script>
+const btn = document.getElementById("go");
+const err = document.getElementById("error");
+const result = document.getElementById("result");
+
+btn.addEventListener("click", async () => {
+
+    err.textContent = "";
+    result.style.display = "none";
+
+    const fd = new FormData();
+
+    fd.append("text", document.getElementById("text").value);
+
+    const file = document.getElementById("image").files[0];
+
+    if (file) fd.append("image", file);
+
+    btn.disabled = true;
+    btn.textContent = "⏳ Analyzing...";
+
+    try {
+
+        const res = await fetch("/analyze", {
+            method: "POST",
+            body: fd
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.error || "Something went wrong.");
+        }
+
+        document.getElementById("score").textContent =
+            Math.round(data.final_score);
+
+        document.getElementById("fill").style.width =
+            data.final_score + "%";
+
+        const h = data.heuristic_score === null
+            ? "n/a"
+            : Math.round(data.heuristic_score);
+
+        document.getElementById("meta").textContent =
+            `Confidence: ${Math.round(data.confidence)}% | Gemini: ${Math.round(data.gemini_score)} | Heuristic: ${h}`;
+
+        document.getElementById("reasoning").textContent =
+            data.reasoning;
+
+        result.style.display = "block";
+
+    } catch (e) {
+
+        err.textContent = e.message;
+
+    } finally {
+
+        btn.disabled = false;
+        btn.textContent = "🔍 Analyze Content";
+
+    }
+
+});
+</script>
+
+</body>
+</html>
